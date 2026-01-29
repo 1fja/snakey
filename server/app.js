@@ -44,7 +44,7 @@ function connectPeer() {
     if (!roomID) return
   }
 
-  socket = new WebSocket("ws://localhost:8080/ws?room=" + roomID)
+ socket = new WebSocket("ws://" + location.host + "/ws?room=" + roomID)
 
   socket.onopen = function () {
     socket.send(JSON.stringify({
