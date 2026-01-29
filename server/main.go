@@ -148,6 +148,10 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 ===================== */
 
 func main() {
+	// SERVE O CLIENT (index.html, app.js, etc)
+	http.Handle("/", http.FileServer(http.Dir("../client")))
+
+	// BACKEND
 	http.HandleFunc("/pair/create", createRoom)
 	http.HandleFunc("/ws", wsHandler)
 
