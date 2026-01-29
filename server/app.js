@@ -1,8 +1,8 @@
-let socket
+let socket = null
 let roomID = null
 
-let myPublicKey
-let myPrivateKey
+let myPublicKey = null
+let myPrivateKey = null
 let peerPublicKey = null
 let keysReady = false
 
@@ -17,16 +17,12 @@ openpgp.generateKey({
 })
 .then(keys => {
   myPublicKey = keys.publicKey
-
-  return openpgp.readPrivateKey({
-    armoredKey: keys.privateKey
-  })
+  return openpgp.readPrivateKey({ armoredKey: keys.privateKey })
 })
 .then(priv => {
   myPrivateKey = priv
   keysReady = true
 })
-
 
 /* =====================
    INVITE
@@ -43,11 +39,17 @@ function openInvite() {
 
 function connectPeer() {
   if (!keysReady) {
-    alert("Keys are still generating, wait a moment")
+    alert("Wait keys generation")
     return
   }
 
- socket = new WebSocket("ws://" + location.host + "/ws?room=" + roomID)
+  if (!roomID) {
+    roomID = prompt("Paste room ID")
+    if (!roomID) return
+  }
+
+  const protocol = location.protocol === "https:" ? "wss://" : "ws://"
+  socket = new WebSocket(protocol + location.host + "/ws?room=" + roomID)
 
   socket.onopen = function () {
     socket.send(JSON.stringify({
@@ -81,7 +83,12 @@ function connectPeer() {
           const clean = res.data.split("::PAD::")[0]
           addMsg("Peer: " + clean)
         })
+        .catch(() => {})
     }
+  }
+
+  socket.onclose = function () {
+    document.getElementById("status").innerText = "Disconnected"
   }
 }
 
@@ -91,91 +98,33 @@ function connectPeer() {
 
 function sendMsg() {
   if (!peerPublicKey) {
-    alert("Waiting for peer key")
+    alert("Waiting peer")
     return
   }
 
   const input = document.getElementById("msg")
   const text = input.value
+  if (!text) return
   input.value = ""
 
-  // PADDING REAL
-  const padSize = Math.floor(Math.random() * 200) + 50
-  const padding = " ".repeat(padSize)
-  const paddedText = text + "::PAD::" + padding
+  const pad = " ".repeat(Math.floor(Math.random() * 150) + 50)
+  const payload = text + "::PAD::" + pad
 
-  openpgp.createMessage({ text: paddedText })
+  openpgp.createMessage({ text: payload })
     .then(msg => {
       return openpgp.encrypt({
         message: msg,
         encryptionKeys: peerPublicKey
       })
     })
-    .then(encrypted => {
-
-      // DELAY JITTER
-      const jitter = Math.floor(Math.random() * 400) + 100
-
-      setTimeout(() => {
-        socket.send(JSON.stringify({
-          type: "msg",
-          data: encrypted
-        }))
-      }, jitter)
-
+    .then(enc => {
+      socket.send(JSON.stringify({
+        type: "msg",
+        data: enc
+      }))
       addMsg("You: " + text)
     })
 }
-
-/* =====================
-   FAKE TRAFFIC
-===================== */
-function generateFakePGP() {
-  const base64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
-
-  function randBase64(len) {
-    let out = ""
-    for (let i = 0; i < len; i++) {
-      out += base64Chars.charAt(Math.floor(Math.random() * base64Chars.length))
-    }
-    return out
-  }
-
-  const lines = Math.floor(Math.random() * 10) + 8
-  let body = ""
-
-  for (let i = 0; i < lines; i++) {
-    body += randBase64(64) + "\n"
-  }
-
-  return (
-`-----BEGIN PGP MESSAGE-----
-Version: OpenPGP
-
-${body}-----END PGP MESSAGE-----`
-  )
-}
-
-
-function sendFake() {
-  if (!socket || socket.readyState !== 1) return
-
-  const PGP = generateFakePGP()
-
-  const jitter = Math.floor(Math.random() * 800) + 200
-
-  setTimeout(() => {
-    socket.send(JSON.stringify({
-      type: "msg",
-      data: PGP
-    }))
-  }, jitter)
-}
-
-
-setInterval(function () {
-  sendFake()
-}, Math.random() * 3000 + 2000)
 
 /* =====================
    UI
@@ -188,27 +137,12 @@ function addMsg(text) {
 }
 
 /* =====================
-   MEMORY WIPE + DESTROY KEYS
+   CLEANUP
 ===================== */
 
-function wipe(obj) {
-  if (!obj) return
-  for (let k in obj) {
-    try {
-      obj[k] = Math.random().toString(36)
-    } catch {}
-  }
-}
-
 window.addEventListener("beforeunload", function () {
-  wipe(myPrivateKey)
-  wipe(myPublicKey)
-  wipe(peerPublicKey)
-
   myPrivateKey = null
   myPublicKey = null
   peerPublicKey = null
   socket = null
 })
-const protocol = location.protocol === "https:" ? "wss://" : "ws://"
-socket = new WebSocket(protocol + location.host + "/ws?room=" + roomID)
