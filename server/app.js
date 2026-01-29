@@ -4,6 +4,7 @@ let roomID = null
 let myPublicKey
 let myPrivateKey
 let peerPublicKey = null
+let keysReady = false
 
 /* =====================
    KEY GENERATION
@@ -23,7 +24,9 @@ openpgp.generateKey({
 })
 .then(priv => {
   myPrivateKey = priv
+  keysReady = true
 })
+
 
 /* =====================
    INVITE
@@ -39,9 +42,9 @@ function openInvite() {
 ===================== */
 
 function connectPeer() {
-  if (!roomID) {
-    roomID = prompt("Paste room ID")
-    if (!roomID) return
+  if (!keysReady) {
+    alert("Keys are still generating, wait a moment")
+    return
   }
 
  socket = new WebSocket("ws://" + location.host + "/ws?room=" + roomID)
