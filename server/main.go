@@ -150,9 +150,8 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	http.HandleFunc("/pair/create", createRoom)
 	http.HandleFunc("/ws", wsHandler)
-
 	// client
-	fs := http.FileServer(http.Dir("./client"))
+	fs := http.FileServer(http.Dir(".))
 	http.Handle("/", fs)
 
 	log.Println("Server running on :8080")
