@@ -30,7 +30,7 @@ openpgp.generateKey({
 ===================== */
 
 function openInvite() {
-  window.open("http://localhost:8080/pair/create", "_blank")
+  window.open(location.origin + "/pair/create", "_blank")
   alert("Copy the room ID and paste it when connecting")
 }
 
