@@ -148,12 +148,12 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 ===================== */
 
 func main() {
-	// SERVE O CLIENT (index.html, app.js, etc)
-	http.Handle("/", http.FileServer(http.Dir("../client")))
-
-	// BACKEND
 	http.HandleFunc("/pair/create", createRoom)
 	http.HandleFunc("/ws", wsHandler)
+
+	// client
+	fs := http.FileServer(http.Dir("./client"))
+	http.Handle("/", fs)
 
 	log.Println("Server running on :8080")
 	http.ListenAndServe(":8080", nil)
