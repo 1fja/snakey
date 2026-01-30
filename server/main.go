@@ -118,7 +118,8 @@ func main() {
 	http.Handle("/", http.FileServer(http.Dir(".")))
 	http.HandleFunc("/pair/create", createRoom)
 	http.HandleFunc("/ws", wsHandler)
-
+	http.Handle("/favicon.ico", http.FileServer(http.Dir("./")))
+	
 	log.Println("Server running on :8080")
 	http.ListenAndServe(":8080", nil)
 }
