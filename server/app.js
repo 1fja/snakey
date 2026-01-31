@@ -146,3 +146,57 @@ window.addEventListener("beforeunload", function () {
   peerPublicKey = null
   socket = null
 })
+/* =====================
+   PASSIVE FAKE TRAFFIC
+   (NÃO TOCA NO CHAT REAL)
+===================== */
+
+function generateFakePGPMessage() {
+  const base = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
+  function rand(len) {
+    let s = ""
+    for (let i = 0; i < len; i++) {
+      s += base[Math.floor(Math.random() * base.length)]
+    }
+    return s
+  }
+
+  let body = ""
+  const lines = Math.floor(Math.random() * 8) + 6
+  for (let i = 0; i < lines; i++) {
+    body += rand(64) + "\n"
+  }
+
+  return (
+`-----BEGIN PGP MESSAGE-----
+Version: OpenPGP
+
+${body}-----END PGP MESSAGE-----`
+  )
+}
+
+function sendFakeTraffic() {
+  try {
+    if (!socket || socket.readyState !== 1) return
+    if (!peerPublicKey) return
+
+    const fake = generateFakePGPMessage()
+    const jitter = Math.floor(Math.random() * 1200) + 300
+
+    setTimeout(() => {
+      try {
+        socket.send(JSON.stringify({
+          type: "msg",
+          data: fake
+        }))
+      } catch {}
+    }, jitter)
+  } catch {}
+}
+
+/* loop imprevisível */
+setInterval(() => {
+  if (Math.random() > 0.4) {
+    sendFakeTraffic()
+  }
+}, Math.random() * 4000 + 3000)
