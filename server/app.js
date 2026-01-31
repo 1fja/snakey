@@ -91,57 +91,6 @@ function sendMsg() {
   if (!text) return
   input.value = ""
 
-  generateEphemeralKey()
-    .then(keys => {
-      return openpgp.readKey({ armoredKey: keys.publicKey })
-        .then(ephPub => {
-          return openpgp.createMessage({
-            text: text + "::PAD::" + " ".repeat(Math.random() * 200 + 50)
-          }).then(msg => {
-            return openpgp.encrypt({
-              message: msg,
-              encryptionKeys: [peerPublicKey, ephPub]
-            })
-          })
-        })
-    })
-    .then(enc => {
-      socket.send(JSON.stringify({
-        type: "msg",
-        data: enc
-      }))
-      addMsg("You: " + text)
-    })
-}
-function sendFake() {
-  if (!socket || socket.readyState !== 1 || !peerPublicKey) return
-
-  generateEphemeralKey()
-    .then(keys => {
-      return openpgp.readKey({ armoredKey: keys.publicKey })
-        .then(ephPub => {
-          return openpgp.createMessage({
-            text: Math.random().toString(36).repeat(8)
-          }).then(msg => {
-            return openpgp.encrypt({
-              message: msg,
-              encryptionKeys: [peerPublicKey, ephPub]
-            })
-          })
-        })
-    })
-    .then(enc => {
-      socket.send(JSON.stringify({
-        type: "msg",
-        data: enc
-      }))
-    })
-}
-  const input = document.getElementById("msg")
-  const text = input.value
-  if (!text) return
-  input.value = ""
-
   const pad = " ".repeat(Math.floor(Math.random() * 150) + 50)
   const payload = text + "::PAD::" + pad
 
@@ -166,13 +115,7 @@ function addMsg(text) {
   div.textContent = text
   document.getElementById("messages").appendChild(div)
 }
-function generateEphemeralKey() {
-  return openpgp.generateKey({
-    type: "rsa",
-    rsaBits: 1024,
-    userIDs: [{ name: "ephemeral" }]
-  })
-}
+
 window.addEventListener("beforeunload", function () {
   myPrivateKey = null
   myPublicKey = null
