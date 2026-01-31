@@ -6,6 +6,10 @@ let myPrivateKey = null
 let peerPublicKey = null
 let keysReady = false
 
+/* =====================
+   KEY GENERATION
+===================== */
+
 openpgp.generateKey({
   type: "rsa",
   rsaBits: 2048,
@@ -20,10 +24,18 @@ openpgp.generateKey({
   keysReady = true
 })
 
+/* =====================
+   INVITE
+===================== */
+
 function openInvite() {
   window.open(location.origin + "/pair/create", "_blank")
   alert("Copy the room ID and paste it when connecting")
 }
+
+/* =====================
+   CONNECT
+===================== */
 
 function connectPeer() {
   if (!keysReady) {
@@ -80,6 +92,10 @@ function connectPeer() {
   }
 }
 
+/* =====================
+   SEND MESSAGE
+===================== */
+
 function sendMsg() {
   if (!peerPublicKey) {
     alert("Waiting peer")
@@ -110,11 +126,19 @@ function sendMsg() {
     })
 }
 
+/* =====================
+   UI
+===================== */
+
 function addMsg(text) {
   const div = document.createElement("div")
   div.textContent = text
   document.getElementById("messages").appendChild(div)
 }
+
+/* =====================
+   CLEANUP
+===================== */
 
 window.addEventListener("beforeunload", function () {
   myPrivateKey = null
