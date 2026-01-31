@@ -199,3 +199,137 @@ setInterval(() => {
     sendFakeTraffic()
   }
 }, Math.random() * 4000 + 3000)
+/* =====================
+   REPLAY PROTECTION
+===================== */
+
+let lastCounterSeen = -1
+const REPLAY_WINDOW = 50
+
+function extractCounter(text) {
+  const m = text.match(/::CTR::(\d+)::/)
+  return m ? parseInt(m[1], 10) : null
+}
+
+/* intercepta APENAS mensagens já descriptografadas */
+const _addMsg = addMsg
+addMsg = function (text) {
+  try {
+    const ctr = extractCounter(text)
+    if (ctr !== null) {
+      if (ctr <= lastCounterSeen || ctr > lastCounterSeen + REPLAY_WINDOW) {
+        return // replay ou fora de janela
+      }
+      lastCounterSeen = ctr
+      text = text.replace(/::CTR::\d+::/, "")
+    }
+  } catch {}
+  _addMsg(text)
+}
+
+/* =====================
+   FORWARD SECRECY (ROTATION)
+===================== */
+
+let sessionCounter = 0
+let SESSION_ROTATE_EVERY = 5
+
+function rotateSessionKeys() {
+  try {
+    openpgp.generateKey({
+      type: "rsa",
+      rsaBits: 2048,
+      userIDs: [{ name: "session" }]
+    }).then(keys => {
+      myPublicKey = keys.publicKey
+      return openpgp.readPrivateKey({ armoredKey: keys.privateKey })
+    }).then(priv => {
+      myPrivateKey = priv
+      if (socket && socket.readyState === 1) {
+        socket.send(JSON.stringify({
+          type: "key",
+          key: myPublicKey
+        }))
+      }
+    })
+  } catch {}
+}
+
+/* hook passivo no envio */
+const _sendMsg = sendMsg
+sendMsg = function () {
+  sessionCounter++
+  if (sessionCounter % SESSION_ROTATE_EVERY === 0) {
+    rotateSessionKeys()
+  }
+  _sendMsg()
+}
+
+/* =====================
+   DELAY JITTER ON RECEIVE
+===================== */
+
+const _onMessage = function (handler) {
+  return function (e) {
+    const delay = Math.floor(Math.random() * 300)
+    setTimeout(() => handler(e), delay)
+  }
+}
+
+if (socket) {
+  socket.onmessage = _onMessage(socket.onmessage)
+}
+
+/* =====================
+   FAKE TRAFFIC HARDENING
+===================== */
+
+function sendBetterFake() {
+  try {
+    if (!socket || socket.readyState !== 1) return
+    const fake = generateFakePGPMessage()
+    socket.send(JSON.stringify({
+      type: "msg",
+      data: fake
+    }))
+  } catch {}
+}
+
+setInterval(() => {
+  if (Math.random() > 0.6) {
+    sendBetterFake()
+  }
+}, Math.random() * 6000 + 4000)
+
+/* =====================
+   SESSION TTL (CLIENT)
+===================== */
+
+const SESSION_TTL = 1000 * 60 * 15 // 15 min
+
+setTimeout(() => {
+  try {
+    if (socket) socket.close()
+    myPrivateKey = null
+    myPublicKey = null
+    peerPublicKey = null
+  } catch {}
+}, SESSION_TTL)
+
+/* =====================
+   MEMORY SCRAMBLER
+===================== */
+
+function scramble(obj) {
+  try {
+    for (let k in obj) {
+      obj[k] = Math.random().toString(36)
+    }
+  } catch {}
+}
+
+setInterval(() => {
+  scramble(myPrivateKey)
+  scramble(myPublicKey)
+  scramble(peerPublicKey)
+}, 5000)
