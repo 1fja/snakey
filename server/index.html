@@ -27,14 +27,6 @@ body {
   margin-bottom:10px;
   text-align:left;
 }
-
-#logo {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
 input {
   width:70%;
   padding:6px;
@@ -44,18 +36,12 @@ button {
   padding:6px 10px;
   margin:5px;
 }
-body:has(#chat[style*="display: block"]) #logo {
-  position: static;
-  transform: none;
-  margin: 20px;
-}
 </style>
 </head>
 
 <body>
 
 <h2 id="status">Not connected</h2>
-<img id="logo" src="favicon.png" width="300" height="300">
 <button onclick="openInvite()">Create Invite</button>
 <button onclick="connectPeer()">Connect Peer</button>
 
