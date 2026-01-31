@@ -169,7 +169,6 @@ function generateFakePGPMessage() {
 
   return (
 `-----BEGIN PGP MESSAGE-----
-Version: OpenPGP
 
 ${body}-----END PGP MESSAGE-----`
   )
