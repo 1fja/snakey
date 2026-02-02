@@ -147,8 +147,7 @@ window.addEventListener("beforeunload", function () {
   socket = null
 })
 /* =====================
-   PASSIVE FAKE TRAFFIC
-   (NÃO TOCA NO CHAT REAL)
+   FAKE TRAFFIc
 ===================== */
 
 function generateFakePGPMessage() {
@@ -193,7 +192,7 @@ function sendFakeTraffic() {
   } catch {}
 }
 
-/* loop imprevisível */
+/* randomizar */
 setInterval(() => {
   if (Math.random() > 0.4) {
     sendFakeTraffic()
